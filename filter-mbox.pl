@@ -6,16 +6,16 @@ use warnings;
 use MIME::Parser;
 use Date::Manip;
 
-my $startDate = parseDate(shift @ARGV);
+my $startDate = parseDate(shift @ARGV, 1);
 
 # End date resolves to a noninclusive format; so we need to add almost
 # another day to include all of the emails received on the end date.
-my $endDate = DateCalc(parseDate(shift @ARGV), "+ 23 hours 59 minutes 59 seconds");
+my $endDate = DateCalc(parseDate(shift @ARGV, 1), "+ 23 hours 59 minutes 59 seconds");
 
 my $Context = "";
 
 sub parseDate {
-	my ($date) = @_;
+	my ($date, $shouldDie) = @_;
 
 	my $originalDate = $date;
 
@@ -23,7 +23,10 @@ sub parseDate {
 	$date =~ s/\s*\(\w+\)$//;
 
 	my $parsedDate = ParseDate($date);
-	die "$Context: Failed to parse date: '$originalDate'" unless length $parsedDate;
+	if (!length $parsedDate) {
+		die "$Context: Failed to parse date: '$originalDate'" if $shouldDie;
+		return undef;
+	}
 
 	return $parsedDate;
 }
@@ -57,17 +60,20 @@ sub processEmail {
 	my $didEmailMatch = 0;
 
 	my $head = &getMimeHead($headers);
+	my $parsedDate;
 	if ($head->count('Date')) {
 		my $date = $head->get('Date');
-		my $parsedDate = parseDate($date);
+		$parsedDate = parseDate($date, 0);
 
 		$didEmailMatch = isDateInRange($startDate, $parsedDate, $endDate);
-	} else {
+	}
+
+	if (!defined $parsedDate) {
 		my $date = $fromLine;
 
 		$date =~ s/^From\s[^\s]+//;
 
-		my $parsedDate = parseDate($date);
+		my $parsedDate = parseDate($date, 1);
 		$didEmailMatch = isDateInRange($startDate, $parsedDate, $endDate);
 	}
 
