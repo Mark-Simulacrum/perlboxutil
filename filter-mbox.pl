@@ -62,17 +62,8 @@ sub processEmail {
 
 		$date =~ s/^From\s[^\s]+//;
 
-		if ($date ne '') { # If From line contained just "From example@example.com" without a date
-			my $parsedDate = parseDate($date);
-			$didEmailMatch = isDateInRange($startDate, $parsedDate, $endDate);
-		} else {
-			if ($head->count('Subject')) {
-				my $subject = $head->get('Subject');
-				warn "$filename: Unable to parse date in email with subject: '$subject'";
-			} else {
-				warn "$filename: Unable to parse date in email with no subject. From-line: $fromLine";
-			}
-		}
+		my $parsedDate = parseDate($date);
+		$didEmailMatch = isDateInRange($startDate, $parsedDate, $endDate);
 	}
 
 	if ($didEmailMatch) {
