@@ -7,7 +7,10 @@ use MIME::Parser;
 use Date::Manip;
 
 my $startDate = parseDate(shift @ARGV);
-my $endDate = parseDate(shift @ARGV);
+
+# End date resolves to a noninclusive format; so we need to add almost
+# another day to include all of the emails received on the end date.
+my $endDate = DateCalc(parseDate(shift @ARGV), "+ 23 hours 59 minutes 59 seconds");
 
 my $Context = "";
 
