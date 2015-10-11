@@ -81,7 +81,7 @@ foreach my $argument (@ARGV) {
 	if ($argument eq '--in') {
 		$hasSeenSplitter = 1;
 	} else {
-		if (!$hasSeenSplitter) {
+		if ($hasSeenSplitter) {
 			push @toBeHashed, $argument;
 		} else {
 			push @toBeChecked, $argument;
