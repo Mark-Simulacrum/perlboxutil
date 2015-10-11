@@ -9,6 +9,8 @@ use Date::Manip;
 my $startDate = parseDate(shift @ARGV);
 my $endDate = parseDate(shift @ARGV);
 
+my $Context = "";
+
 sub parseDate {
 	my ($date) = @_;
 
@@ -18,7 +20,7 @@ sub parseDate {
 	$date =~ s/\s*\(\w+\)$//;
 
 	my $parsedDate = ParseDate($date);
-	die "Failed to parse date: '$originalDate'" if $parsedDate eq "" && $originalDate !~ /^\s*$/;
+	die "$Context: Failed to parse date: '$originalDate'" unless length $parsedDate;
 
 	return $parsedDate;
 }
@@ -94,6 +96,8 @@ sub processFile {
 	my $isReadingHeaders = 0;
 	my $sawBlankLine = 1;
 	while (my $line = <$fh>) {
+		$Context = "$filename:$.";
+
 		if ($line =~ /^From\s/ && $sawBlankLine) {
 		 	&processEmail($fromLine, $headers, $body, $filename) unless !$fromLine;
 
