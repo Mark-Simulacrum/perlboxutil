@@ -47,6 +47,7 @@ sub parseDate {
 
 	$date =~ s/[^\d]+$//;
 	$date =~ s/\s*\(\w+\)$//;
+	$date =~ s/\s*\+\d+$//;
 
 	my $parsedDate = ParseDate($date);
 	if (!length $parsedDate) {
@@ -60,11 +61,14 @@ sub parseDate {
 sub getDateOfFromLine {
 	my ($fromLine, $isExistenceCheck) = @_;
 
-	warn $fromLine;
+	my $fromLineOriginal = $fromLine;
 
 	$fromLine =~ s/^From\s[^\s]+//;
 
-	return parseDate($fromLine, !$isExistenceCheck);
+	my $parsedDate = parseDate($fromLine, !$isExistenceCheck);
+	warn "Could not find date in from line: $fromLineOriginal; $fromLine" unless length $parsedDate;
+
+	return $parsedDate;
 }
 
 sub processFile {

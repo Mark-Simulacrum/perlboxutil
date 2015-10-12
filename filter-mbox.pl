@@ -21,6 +21,7 @@ sub parseDate {
 
 	$date =~ s/[^\d]+$//;
 	$date =~ s/\s*\(\w+\)$//;
+	$date =~ s/\s*\+\d+$//;
 
 	my $parsedDate = ParseDate($date);
 	if (!length $parsedDate) {
@@ -57,9 +58,14 @@ sub getMimeHead {
 sub getDateOfFromLine {
 	my ($fromLine, $isExistenceCheck) = @_;
 
+	my $fromLineOriginal = $fromLine;
+
 	$fromLine =~ s/^From\s[^\s]+//;
 
-	return parseDate($fromLine, !$isExistenceCheck);
+	my $parsedDate = parseDate($fromLine, !$isExistenceCheck);
+	warn "Could not find date in from line: $fromLineOriginal" unless length $parsedDate;
+
+	return $parsedDate;
 }
 
 sub processEmail {
