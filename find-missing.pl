@@ -66,7 +66,7 @@ sub getDateOfFromLine {
 	$fromLine =~ s/^From\s[^\s]+//;
 
 	my $parsedDate = parseDate($fromLine, !$isExistenceCheck);
-	warn "Could not find date in from line: $fromLineOriginal; $fromLine" unless length $parsedDate;
+	warn "$Context: Ignoring dateless From line: $fromLineOriginal" unless length $parsedDate;
 
 	return $parsedDate;
 }
