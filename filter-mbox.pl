@@ -54,6 +54,14 @@ sub getMimeHead {
 	return $entity->head;
 }
 
+sub getDateOfFromLine {
+	my ($fromLine, $isExistenceCheck) = @_;
+
+	$fromLine =~ s/^From\s[^\s]+//;
+
+	return parseDate($fromLine, !$isExistenceCheck);
+}
+
 sub processEmail {
 	my ($fromLine, $headers, $body, $filename) = @_;
 
@@ -69,11 +77,7 @@ sub processEmail {
 	}
 
 	if (!defined $parsedDate) {
-		my $date = $fromLine;
-
-		$date =~ s/^From\s[^\s]+//;
-
-		my $parsedDate = parseDate($date, 1);
+		my $parsedDate = getDateOfFromLine($fromLine, 0);
 		$didEmailMatch = isDateInRange($startDate, $parsedDate, $endDate);
 	}
 
@@ -107,7 +111,7 @@ sub processFile {
 	while (my $line = <$fh>) {
 		$Context = "$filename:$.";
 
-		if ($line =~ /^From\s/ && $sawBlankLine) {
+		if ($line =~ /^From\s/ && $sawBlankLine && getDateOfFromLine($line, 1)) {
 		 	&processEmail($fromLine, $headers, $body, $filename) unless !$fromLine;
 
 		 	$fromLine = $line;
