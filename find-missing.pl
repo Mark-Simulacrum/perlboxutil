@@ -4,8 +4,11 @@ use strict;
 use warnings;
 
 use Digest::SHA qw ( sha512 );
+use Date::Manip;
 
+my $Context = "";
 my %emailHashes = ();
+
 sub isBlankLine {
 	my ($line) = @_;
 
@@ -37,6 +40,33 @@ sub hashEmail {
 	$emailHashes{sha512($body)} = undef;
 }
 
+sub parseDate {
+	my ($date, $shouldDie) = @_;
+
+	my $originalDate = $date;
+
+	$date =~ s/[^\d]+$//;
+	$date =~ s/\s*\(\w+\)$//;
+
+	my $parsedDate = ParseDate($date);
+	if (!length $parsedDate) {
+		die "$Context: Failed to parse date: '$originalDate'" if $shouldDie;
+		return undef;
+	}
+
+	return $parsedDate;
+}
+
+sub getDateOfFromLine {
+	my ($fromLine, $isExistenceCheck) = @_;
+
+	warn $fromLine;
+
+	$fromLine =~ s/^From\s[^\s]+//;
+
+	return parseDate($fromLine, !$isExistenceCheck);
+}
+
 sub processFile {
 	my ($filename, $processEmail) = @_;
 
@@ -49,7 +79,9 @@ sub processFile {
 	my $isReadingHeaders = 0;
 	my $sawBlankLine = 1;
 	while (my $line = <$fh>) {
-		if ($line =~ /^From\s/ && $sawBlankLine) {
+		$Context = "$filename:$.";
+
+		if ($line =~ /^From\s/ && $sawBlankLine && getDateOfFromLine($line, 1)) {
 		 	&{$processEmail}($fromLine, $headers, $body, $filename) unless !$fromLine;
 
 		 	$fromLine = $line;
