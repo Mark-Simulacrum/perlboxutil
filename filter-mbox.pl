@@ -120,7 +120,7 @@ sub processFile {
 	while (my $line = <$fh>) {
 		$Context = "$filename:$.";
 
-		if ($line =~ /^From\s/ && $sawBlankLine && getDateOfFromLine($line, 1)) {
+		if ($sawBlankLine && $line =~ /^From[^\S\n]/ && getDateOfFromLine($line, 1)) {
 		 	&processEmail($fromLine, $headers, $body, $filename) unless !$fromLine;
 
 		 	$fromLine = $line;
