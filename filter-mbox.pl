@@ -72,7 +72,7 @@ sub getDateOfFromLine {
 }
 
 sub processEmail {
-	my ($fromLine, $headers, $body, $filename) = @_;
+	my ($fromLine, $headers, $filename) = @_;
 
 	my $didEmailMatch = 0;
 
@@ -101,9 +101,9 @@ sub processEmail {
 		# The blank line after the headers isn't included for easy addition
 		# of more headers.
 		print "\n";
-
-		print $body;
 	}
+
+	return $didEmailMatch;
 }
 
 sub processFile {
@@ -113,38 +113,34 @@ sub processFile {
 
 	my $fromLine = '';
 	my $headers = '';
-	my $body = '';
 
 	my $isReadingHeaders = 0;
 	my $sawBlankLine = 1;
+	my $didEmailMatch = 0;
 	while (my $line = <$fh>) {
 		$Context = "$filename:$.";
 
 		if ($sawBlankLine && $line =~ /^From[^\S\n]/ && getDateOfFromLine($line, 1)) {
-		 	&processEmail($fromLine, $headers, $body, $filename) unless !$fromLine;
-
 		 	$fromLine = $line;
 		 	$headers = '';
-		 	$body = '';
 
 		 	$isReadingHeaders = 1;
 		} elsif ($isReadingHeaders) {
 			if (isBlankLine $line) {
 				$isReadingHeaders = 0;
+
+				$didEmailMatch = &processEmail($fromLine, $headers, $filename) unless !$fromLine;
 			} else {
 				$headers .= $line;
 			}
-		} else {
-			$body .= $line;
+		} elsif ($didEmailMatch) {
+			print $line;
 		}
 
 		$sawBlankLine = isBlankLine $line;
 	}
-
-	&processEmail($fromLine, $headers, $body, $filename) unless !$fromLine;
 }
 
 foreach my $argument (@ARGV) {
 	processFile($argument);
-	# print "$startDate to $endDate: $argument\n";
 }
