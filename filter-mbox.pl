@@ -49,6 +49,9 @@ sub isBlankLine {
 sub getMimeHead {
 	my ($headers) = @_;
 
+	$headers =~ s/^Content-Type:/X-Content-Type:/mi;
+	$headers =~ s/^Content-Transfer-Encoding:/X-Content-Transfer-Encoding:/mi;
+
 	my $parser = new MIME::Parser;
 	$parser->output_to_core(1);
 	my $entity = $parser->parse_data($headers) or die "Failed to parse headers:\n$headers";
