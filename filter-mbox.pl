@@ -20,8 +20,8 @@ sub parseDate {
 	my $originalDate = $date;
 
 	$date =~ s/[^\d]+$//;
-	$date =~ s/\s*\(\w+\)$//;
-	$date =~ s/\s*\+\d+$//;
+	$date =~ s/\s*\(.*?\)$//;
+	$date =~ s/\s*[+-]\d+$//;
 
 	my $parsedDate = ParseDate($date);
 	if (!length $parsedDate) {
