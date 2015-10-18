@@ -7,14 +7,14 @@ use MIME::Parser;
 use Date::Manip;
 
 # XXX: These should not really be hard-coded.
-my $minDate = parseDate('1996-01-01');
-my $maxDate = DateCalc(parseDate('2016-01-01'), '-1 second');
+my $minDate = parseDate('1996-01-01', 1);
+my $maxDate = DateCalc(parseDate('2016-01-01', 1), '-1 second');
 
-my $startDate = parseDate(shift @ARGV);
+my $startDate = parseDate(shift(@ARGV), 1);
 
 # End date resolves to a noninclusive format; so we need to add almost
 # another day to include all of the emails received on the end date.
-my $endDate = DateCalc(parseDate(shift @ARGV), "+ 23 hours 59 minutes 59 seconds");
+my $endDate = DateCalc(parseDate(shift(@ARGV), 1), "+ 23 hours 59 minutes 59 seconds");
 
 my $Context = "";
 my $LastGoodDate;
