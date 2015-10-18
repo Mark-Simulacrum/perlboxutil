@@ -163,6 +163,8 @@ sub processFile {
 
 		$sawBlankLine = isBlankLine $line;
 	}
+
+	print "\n" unless $sawBlankLine;
 }
 
 foreach my $argument (@ARGV) {

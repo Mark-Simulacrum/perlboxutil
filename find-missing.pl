@@ -86,6 +86,8 @@ sub processFile {
 		$Context = "$filename:$.";
 
 		if ($sawBlankLine && $line =~ /^From[^\S\n]/ && getDateOfFromLine($line, 1)) {
+			$body = chomp $body;
+
 		 	&{$processEmail}($fromLine, $headers, $body, $filename) unless !$fromLine;
 
 		 	$fromLine = $line;
@@ -105,6 +107,8 @@ sub processFile {
 
 		$sawBlankLine = isBlankLine $line;
 	}
+
+	$body = chomp $body;
 
 	&{$processEmail}($fromLine, $headers, $body, $filename) unless !$fromLine;
 }
