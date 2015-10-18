@@ -6,13 +6,18 @@ use warnings;
 use MIME::Parser;
 use Date::Manip;
 
-my $startDate = parseDate(shift @ARGV, 1);
+# XXX: These should not really be hard-coded.
+my $minDate = parseDate('1996-01-01');
+my $maxDate = DateCalc(parseDate('2016-01-01'), '-1 second');
+
+my $startDate = parseDate(shift @ARGV);
 
 # End date resolves to a noninclusive format; so we need to add almost
 # another day to include all of the emails received on the end date.
-my $endDate = DateCalc(parseDate(shift @ARGV, 1), "+ 23 hours 59 minutes 59 seconds");
+my $endDate = DateCalc(parseDate(shift @ARGV), "+ 23 hours 59 minutes 59 seconds");
 
 my $Context = "";
+my $LastGoodDate;
 
 sub parseDate {
 	my ($date, $shouldDie) = @_;
@@ -37,7 +42,9 @@ sub isDateInRange {
 
 	return 0 unless $startDate && $middleDate && $endDate;
 
-	return Date_Cmp($startDate, $middleDate) <= 0 && Date_Cmp($endDate, $middleDate) >= 0;
+	return
+		Date_Cmp($startDate, $middleDate) <= 0 &&
+		Date_Cmp($endDate, $middleDate) >= 0;
 }
 
 sub isBlankLine {
@@ -74,42 +81,59 @@ sub getDateOfFromLine {
 sub processEmail {
 	my ($fromLine, $headers, $filename) = @_;
 
-	my $didEmailMatch = 0;
+	my $date;
 
-	my $head = &getMimeHead($headers);
-	my $parsedDate;
-	if ($head->count('Date')) {
-		my $date = $head->get('Date');
-		$parsedDate = parseDate($date, 0);
-
-		$didEmailMatch = isDateInRange($startDate, $parsedDate, $endDate);
+	my $mime = &getMimeHead($headers);
+	if ($mime && $mime->count('Date')) {
+		$date = parseDate($mime->get('Date'), 0);
 	}
 
-	if (!defined $parsedDate) {
-		my $parsedDate = getDateOfFromLine($fromLine, 0);
-		$didEmailMatch = isDateInRange($startDate, $parsedDate, $endDate);
+	if (!defined $date) {
+		$date = getDateOfFromLine($fromLine, 0);
 	}
 
-	if ($didEmailMatch) {
-		print $fromLine;
-		print $headers;
-
-		if ($headers !~ /^X-Was-Archived-At:/ && $filename ne "-") {
-			print "X-Was-Archived-At: $filename\n";
-		}
-
-		# The blank line after the headers isn't included for easy addition
-		# of more headers.
-		print "\n";
+	if (!defined $date) {
+		$date = $LastGoodDate;
 	}
 
-	return $didEmailMatch;
+	if (!defined $date) {
+		warn("$Context: Cannot find any date");
+		return 0;
+	}
+
+	if (Date_Cmp($date, $minDate) < 0) {
+		$date = $minDate;
+	}
+	elsif (Date_Cmp($maxDate, $date) < 0) {
+		$date = $maxDate;
+	}
+	else {
+		$LastGoodDate = $date;
+	}
+
+	return 0 unless isDateInRange($startDate, $date, $endDate);
+
+
+	print $fromLine;
+	print $headers;
+
+	if ($headers !~ /^X-Was-Archived-At:/ && $filename ne "-") {
+		print "X-Was-Archived-At: $filename\n";
+	}
+
+	# The blank line after the headers isn't included for easy addition
+	# of more headers.
+	print "\n";
+
+	return 1;
 }
 
 sub processFile {
 	my ($filename) = @_;
 
 	open( my $fh => $filename ) || die "Cannot open $filename: $!";
+
+	undef $LastGoodDate;
 
 	my $fromLine = '';
 	my $headers = '';
