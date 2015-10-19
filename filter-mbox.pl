@@ -18,6 +18,8 @@ my $endDate = DateCalc(parseDate(shift(@ARGV), 1), '+1 day, -1 second');
 
 my $Context = "";
 my $LastGoodDate;
+my $FirstEmail = 1;
+my $NextLine;
 
 sub parseDate {
 	my ($date, $shouldDie) = @_;
@@ -50,7 +52,8 @@ sub isDateInRange {
 sub isBlankLine {
 	my ($line) = @_;
 
-	return $line =~ /^\r?\n$/;
+	# Do not return an empty list when called in a list context
+	return $line =~ /^\r?\n$/ ? 1 : 0;
 }
 
 sub getMimeHead {
@@ -113,6 +116,8 @@ sub processEmail {
 
 	return 0 unless isDateInRange($startDate, $date, $endDate);
 
+	print "\n" unless $FirstEmail;
+	$FirstEmail = 0;
 
 	print $fromLine;
 	print $headers;
@@ -128,6 +133,24 @@ sub processEmail {
 	return 1;
 }
 
+sub isFromLine {
+	my ($sawBlankLine, $line) = @_;
+
+	return $sawBlankLine && $line =~ /^From[^\S\n]/ && getDateOfFromLine($line, 1);
+}
+
+sub readLine {
+	my ($fh) = @_;
+
+	my $currentLine = $NextLine;
+	if (defined ($NextLine = <$fh>)) {
+		chomp $NextLine;
+		$NextLine .= "\n";
+	}
+
+	return $currentLine;
+}
+
 sub processFile {
 	my ($filename) = @_;
 
@@ -141,16 +164,18 @@ sub processFile {
 	my $isReadingHeaders = 0;
 	my $sawBlankLine = 1;
 	my $didEmailMatch = 0;
-	while (my $line = <$fh>) {
+
+	&readLine($fh); # Initialize reading cache
+	while (my $line = &readLine($fh)) {
 		$Context = "$filename:$.";
 
-		if ($sawBlankLine && $line =~ /^From[^\S\n]/ && getDateOfFromLine($line, 1)) {
+		if (&isFromLine($sawBlankLine, $line)) {
 		 	$fromLine = $line;
 		 	$headers = '';
 
 		 	$isReadingHeaders = 1;
 		} elsif ($isReadingHeaders) {
-			if (isBlankLine $line) {
+			if (&isBlankLine($line)) {
 				$isReadingHeaders = 0;
 
 				$didEmailMatch = &processEmail($fromLine, $headers, $filename) unless !$fromLine;
@@ -158,13 +183,12 @@ sub processFile {
 				$headers .= $line;
 			}
 		} elsif ($didEmailMatch) {
-			print $line;
+			# TODO: Optimize isFromLine to not be called twice
+			print $line if !defined $NextLine || !&isFromLine(&isBlankLine($line), $NextLine);
 		}
 
 		$sawBlankLine = isBlankLine $line;
 	}
-
-	print "\n" unless $sawBlankLine;
 }
 
 foreach my $argument (@ARGV) {
