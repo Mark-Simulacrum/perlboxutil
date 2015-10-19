@@ -52,8 +52,7 @@ sub isDateInRange {
 sub isBlankLine {
 	my ($line) = @_;
 
-	# Do not return an empty list when called in a list context
-	return $line =~ /^\r?\n$/ ? 1 : 0;
+	return $line eq "\n" || $line eq "\r\n";
 }
 
 sub getMimeHead {
